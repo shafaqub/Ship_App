@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:ship_app/main.dart';
 import 'package:ship_app/services/auth_service.dart';
+import 'package:ship_app/splash_screen.dart';
 
 class FakeAuthService extends AuthService {
   @override
@@ -65,8 +66,18 @@ class FakeAuthService extends AuthService {
 void main() {
   final fakeAuthService = FakeAuthService();
 
+  testWidgets('splash screen opens the login page', (tester) async {
+    await tester.pumpWidget(const ShipApp());
+
+    expect(find.byType(SplashScreen), findsOneWidget);
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('Welcome back'), findsOneWidget);
+  });
+
   testWidgets('login page renders its form', (tester) async {
-    await tester.pumpWidget(ShipApp(authService: fakeAuthService));
+    await tester.pumpWidget(ShipApp(authService: fakeAuthService, showSplash: false));
 
     expect(find.text('Welcome back'), findsOneWidget);
     expect(find.byKey(const Key('emailField')), findsOneWidget);
@@ -75,7 +86,7 @@ void main() {
   });
 
   testWidgets('login validation prevents an empty submission', (tester) async {
-    await tester.pumpWidget(ShipApp(authService: fakeAuthService));
+    await tester.pumpWidget(ShipApp(authService: fakeAuthService, showSplash: false));
 
     await tester.ensureVisible(find.text('Sign in'));
     await tester.tap(find.text('Sign in'));
@@ -87,7 +98,7 @@ void main() {
   });
 
   testWidgets('invalid credentials displays error message', (tester) async {
-    await tester.pumpWidget(ShipApp(authService: fakeAuthService));
+    await tester.pumpWidget(ShipApp(authService: fakeAuthService, showSplash: false));
 
     await tester.enterText(find.byKey(const Key('emailField')), 'wrong@example.com');
     await tester.enterText(find.byKey(const Key('passwordField')), 'wrongpass');
@@ -101,7 +112,7 @@ void main() {
   });
 
   testWidgets('sign up flow switches mode, submits registration and verifies code', (tester) async {
-    await tester.pumpWidget(ShipApp(authService: fakeAuthService));
+    await tester.pumpWidget(ShipApp(authService: fakeAuthService, showSplash: false));
 
     await tester.ensureVisible(find.text('Sign Up'));
     await tester.tap(find.text('Sign Up'));
@@ -134,7 +145,7 @@ void main() {
   });
 
   testWidgets('valid login navigates to the home dashboard', (tester) async {
-    await tester.pumpWidget(ShipApp(authService: fakeAuthService));
+    await tester.pumpWidget(ShipApp(authService: fakeAuthService, showSplash: false));
 
     await tester.enterText(find.byKey(const Key('emailField')), 'alex@example.com');
     await tester.enterText(find.byKey(const Key('passwordField')), 'password');
@@ -149,7 +160,7 @@ void main() {
   });
 
   testWidgets('home drawer opens and exposes navigation placeholders', (tester) async {
-    await tester.pumpWidget(ShipApp(authService: fakeAuthService));
+    await tester.pumpWidget(ShipApp(authService: fakeAuthService, showSplash: false));
     await tester.enterText(find.byKey(const Key('emailField')), 'alex@example.com');
     await tester.enterText(find.byKey(const Key('passwordField')), 'password');
     await tester.ensureVisible(find.text('Sign in'));
@@ -168,7 +179,7 @@ void main() {
   });
 
   testWidgets('logout returns to the login page', (tester) async {
-    await tester.pumpWidget(ShipApp(authService: fakeAuthService));
+    await tester.pumpWidget(ShipApp(authService: fakeAuthService, showSplash: false));
     await tester.enterText(find.byKey(const Key('emailField')), 'alex@example.com');
     await tester.enterText(find.byKey(const Key('passwordField')), 'password');
     await tester.ensureVisible(find.text('Sign in'));

@@ -206,11 +206,11 @@ class _LoginScreenState extends State<LoginScreen>
   Widget _mobileLayout() {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _branding(compact: true),
         const SizedBox(height: 32),
-        _authFormCard(),
+        SizedBox(width: double.infinity, child: _authFormCard()),
       ],
     );
   }
@@ -485,12 +485,16 @@ class _LoginScreenState extends State<LoginScreen>
                     : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
-                            _authMode == AuthMode.login
-                                ? 'Sign in'
-                                : _authMode == AuthMode.signUp
-                                    ? 'Send Verification Code'
-                                    : 'Verify & Continue',
+                          Flexible(
+                            child: Text(
+                              _authMode == AuthMode.login
+                                  ? 'Sign in'
+                                  : _authMode == AuthMode.signUp
+                                      ? 'Send Verification Code'
+                                      : 'Verify & Continue',
+                              textAlign: TextAlign.center,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                           const SizedBox(width: 8),
                           const Icon(Icons.arrow_forward_rounded, size: 20),
@@ -499,8 +503,10 @@ class _LoginScreenState extends State<LoginScreen>
               ),
             ),
             const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 2,
               children: [
                 Text(
                   _authMode == AuthMode.login
