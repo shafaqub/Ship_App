@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-
 import 'login_page.dart';
-import 'splash_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -17,11 +15,12 @@ class MyApp extends StatelessWidget {
       title: 'InterviewMe',
       theme: ThemeData(
         scaffoldBackgroundColor: const Color(0xFF020B1A),
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF5E7CFF)),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF5E7CFF),
+        ),
         useMaterial3: true,
       ),
-      home: const SplashScreen(nextScreen: LoginPage()),
+      home: LoginPage(),
     );
   }
 }
-

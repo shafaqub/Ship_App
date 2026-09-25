@@ -24,7 +24,7 @@ class _SplashScreenState extends State<SplashScreen>
       vsync: this,
       duration: const Duration(seconds: 12),
     )..repeat();
-    _splashTimer = Timer(const Duration(seconds: 10), _openNextScreen);
+    _splashTimer = Timer(const Duration(seconds: 3), _openNextScreen);
   }
 
   void _openNextScreen() {
@@ -54,11 +54,7 @@ class _SplashScreenState extends State<SplashScreen>
     return Scaffold(
       body: DecoratedBox(
         decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(0, -0.15),
-            radius: 1.15,
-            colors: [Color(0xFF07172E), Color(0xFF020A1B), Color(0xFF010611)],
-          ),
+          color: Color(0xFF020A1B),
         ),
         child: Stack(
           children: [
