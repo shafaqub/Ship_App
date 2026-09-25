@@ -2,20 +2,27 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({required this.nextScreen, super.key});
+  const SplashScreen({
+    required this.nextScreen,
+    this.onInitialize,
+    super.key,
+  });
 
   final Widget nextScreen;
+  final Future<void> Function()? onInitialize;
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
 class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
+  with TickerProviderStateMixin {
   late final AnimationController _waveController;
-  Timer? _splashTimer;
+  late final AnimationController _logoController;
+  bool _dingPlayed = false;
 
   @override
   void initState() {
@@ -23,27 +30,62 @@ class _SplashScreenState extends State<SplashScreen>
     _waveController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 12),
-    )..repeat();
-    _splashTimer = Timer(const Duration(seconds: 3), _openNextScreen);
+    )..forward();
+    _logoController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..addListener(_handleLogoProgress);
+    _startStartup();
+  }
+
+  void _handleLogoProgress() {
+    if (!_dingPlayed && _logoController.value >= 0.72) {
+      _dingPlayed = true;
+      SystemSound.play(SystemSoundType.alert);
+    }
+  }
+
+  Future<void> _startStartup() async {
+    try {
+      await Future.wait<void>([
+        _logoController.forward(),
+        widget.onInitialize?.call() ?? Future<void>.value(),
+      ]);
+    } catch (_) {
+      // Login is the existing safe fallback when optional startup work fails.
+    }
+    if (mounted) _openNextScreen();
   }
 
   void _openNextScreen() {
     if (!mounted) return;
+    _waveController.stop(canceled: false);
+    _logoController.stop(canceled: false);
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 450),
+        transitionDuration: const Duration(milliseconds: 360),
         pageBuilder: (context, animation, secondaryAnimation) =>
             widget.nextScreen,
         transitionsBuilder: (context, animation, secondaryAnimation, child) =>
-            FadeTransition(opacity: animation, child: child),
+            FadeTransition(
+              opacity: animation,
+              child: ScaleTransition(
+                scale: Tween<double>(begin: 0.985, end: 1).animate(
+                  CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+                ),
+                child: child,
+              ),
+            ),
       ),
     );
   }
 
   @override
   void dispose() {
-    _splashTimer?.cancel();
+    _waveController.stop(canceled: false);
+    _logoController.stop(canceled: false);
     _waveController.dispose();
+    _logoController.dispose();
     super.dispose();
   }
 
@@ -74,11 +116,7 @@ class _SplashScreenState extends State<SplashScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Image.asset(
-                    'assets/images/InterviewMe_logo.png',
-                    width: 124,
-                    height: 124,
-                  ),
+                  _buildAnimatedLogo(),
                   const SizedBox(height: 18),
                   RichText(
                     text: TextSpan(
@@ -114,6 +152,70 @@ class _SplashScreenState extends State<SplashScreen>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildAnimatedLogo() {
+    const logoSize = 220.0;
+    const dotSize = logoSize * 0.15;
+    final dotX = logoSize * 0.354 - dotSize / 2;
+    final dotY = logoSize * 0.205 - dotSize / 2;
+
+    return SizedBox(
+      width: logoSize,
+      height: logoSize,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Image.asset(
+            'assets/interviewme-logo-v8.png',
+            width: logoSize,
+            height: logoSize,
+          ),
+          Positioned(
+            left: dotX,
+            top: dotY,
+            child: AnimatedBuilder(
+              animation: _logoController,
+              builder: (context, child) {
+                final raw = _logoController.value;
+                final fallProgress = (raw / 0.72).clamp(0.0, 1.0);
+                final fall = Curves.easeInCubic.transform(fallProgress);
+                final impactProgress = ((raw - 0.72) / 0.28).clamp(0.0, 1.0);
+                final impact = math.sin(impactProgress * math.pi);
+
+                return Transform.translate(
+                  offset: Offset(0, -logoSize * 0.32 * (1 - fall)),
+                  child: Transform.scale(
+                    scale: 1 + impact * 0.08,
+                    child: child,
+                  ),
+                );
+              },
+              child: Container(
+                width: dotSize,
+                height: dotSize,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF57D0FF).withValues(alpha: 0.5),
+                      blurRadius: 14,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: const DecoratedBox(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0xFF57D0FF),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
