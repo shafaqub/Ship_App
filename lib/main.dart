@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import 'login_page.dart';
 
-import 'screens/overall_results_screen.dart';
-import 'theme/app_theme.dart';
 import 'services/revenuecat_service.dart';
 
 Future<void> main() async {
@@ -20,8 +19,12 @@ class InterviewMeApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'InterviewMe',
-      theme: AppTheme.darkTheme,
-      home: const OverallResultsScreen(),
+      theme: ThemeData(
+        scaffoldBackgroundColor: const Color(0xFF020B1A),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF5E7CFF)),
+        useMaterial3: true,
+      ),
+      home: LoginPage(),
     );
   }
 }
