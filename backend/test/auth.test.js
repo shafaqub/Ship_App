@@ -2,6 +2,7 @@ require('dotenv').config();
 const assert = require('assert');
 const mongoose = require('mongoose');
 const User = require('../src/models/User');
+const { normalizeGoogleClientIds } = require('../src/routes/auth');
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/interview_me';
 
@@ -13,6 +14,16 @@ async function runTests() {
     const testEmail = 'signup_tester@example.com';
     const testPassword = 'signupPassword123';
     const testName = 'Signup Tester';
+
+    assert.deepStrictEqual(
+      normalizeGoogleClientIds(' client-a.apps.googleusercontent.com, client-b.apps.googleusercontent.com , , client-c.apps.googleusercontent.com '),
+      [
+        'client-a.apps.googleusercontent.com',
+        'client-b.apps.googleusercontent.com',
+        'client-c.apps.googleusercontent.com',
+      ],
+      'Google client IDs should be trimmed and deduplicated',
+    );
 
     // Cleanup previous run
     await User.deleteMany({ email: testEmail });

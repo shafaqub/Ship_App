@@ -1,8 +1,23 @@
 const express = require('express');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const { OAuth2Client } = require('google-auth-library');
 const router = express.Router();
 const User = require('../models/User');
+const googleClient = new OAuth2Client();
+
+function normalizeGoogleClientIds(rawValue = '') {
+  return [...new Set(
+    String(rawValue)
+      .split(/[\n,\r]+/)
+      .map((clientId) => clientId.trim())
+      .filter(Boolean),
+  )];
+}
+
+function getGoogleAudiences() {
+  return normalizeGoogleClientIds(process.env.GOOGLE_CLIENT_ID || '');
+}
 
 function generateVerificationCode() {
   return crypto.randomInt(100000, 1000000).toString();
@@ -212,7 +227,7 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    const isMatch = await user.comparePassword(password);
+    const isMatch = user.password && await user.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({
         success: false,
@@ -245,4 +260,91 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// POST /api/auth/google
+router.post('/google', async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    const audiences = getGoogleAudiences();
+
+    if (typeof idToken !== 'string' || !idToken.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Google ID token is required',
+      });
+    }
+
+    if (audiences.length === 0) {
+      return res.status(503).json({
+        success: false,
+        message: 'Google sign-in is not configured on the server',
+      });
+    }
+
+    let payload;
+    try {
+      const ticket = await googleClient.verifyIdToken({
+        idToken: idToken.trim(),
+        audience: audiences,
+      });
+      payload = ticket.getPayload();
+    } catch {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid Google credential',
+      });
+    }
+
+    if (!payload?.sub || !payload.email || payload.email_verified !== true) {
+      return res.status(401).json({
+        success: false,
+        message: 'Google account must have a verified email address',
+      });
+    }
+
+    const email = payload.email.trim().toLowerCase();
+    let user = await User.findOne({ googleId: payload.sub });
+    if (!user) {
+      user = await User.findOne({ email });
+    }
+
+    if (user?.googleId && user.googleId !== payload.sub) {
+      return res.status(409).json({
+        success: false,
+        message: 'This email is already linked to another Google account',
+      });
+    }
+
+    if (!user) {
+      user = new User({
+        name: payload.name?.trim() || email.split('@')[0],
+        email,
+        googleId: payload.sub,
+        isVerified: true,
+      });
+    } else {
+      user.googleId = payload.sub;
+      user.isVerified = true;
+    }
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+      },
+    });
+  } catch (error) {
+    console.error('Google login error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error during Google sign-in',
+    });
+  }
+});
+
 module.exports = router;
+module.exports.normalizeGoogleClientIds = normalizeGoogleClientIds;

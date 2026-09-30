@@ -64,6 +64,36 @@ class AuthService {
     }
   }
 
+  Future<AuthResult> loginWithGoogle({required String idToken}) async {
+    try {
+      final uri = Uri.parse('$_baseUrl/google');
+      final response = await _client.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'idToken': idToken}),
+      );
+
+      final Map<String, dynamic> data = jsonDecode(response.body) as Map<String, dynamic>;
+      if (response.statusCode == 200 && data['success'] == true) {
+        return AuthResult(
+          success: true,
+          message: data['message'] as String? ?? 'Login successful',
+          user: data['user'] as Map<String, dynamic>?,
+        );
+      }
+
+      return AuthResult(
+        success: false,
+        message: data['message'] as String? ?? 'Google sign-in failed',
+      );
+    } catch (_) {
+      return const AuthResult(
+        success: false,
+        message: 'Unable to connect to authentication server. Ensure backend is running.',
+      );
+    }
+  }
+
   Future<AuthResult> register({
     required String name,
     required String email,

@@ -1,9 +1,14 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
+import '../config/app_config.dart';
 import '../services/auth_service.dart';
+import '../services/google_sign_in_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/animated_logo.dart';
 import '../widgets/animated_logo_background.dart';
+import '../widgets/google_sign_in_web_button.dart';
 import 'home_screen.dart';
 
 enum AuthMode { login, signUp, verifyEmail }
@@ -34,6 +39,7 @@ class _LoginScreenState extends State<LoginScreen>
   late final Animation<double> _logoOpacity;
 
   late final AuthService _authService;
+  Future<void>? _googleSignInInitialization;
 
   AuthMode _authMode = AuthMode.login;
   bool _obscurePassword = true;
@@ -112,6 +118,80 @@ class _LoginScreenState extends State<LoginScreen>
       if (!mounted) return;
       _handleVerifyResult(result);
     }
+  }
+
+  Future<void> _signInWithGoogle({bool chooseAccount = false}) async {
+    if (kIsWeb) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Use the Google button below to choose an account and continue.';
+      });
+      return;
+    }
+
+    if (AppConfig.googleServerClientId.isEmpty) {
+      setState(() {
+        _errorMessage = 'Google sign-in needs GOOGLE_SERVER_CLIENT_ID. Add it with --dart-define when launching the app.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      _googleSignInInitialization ??= GoogleSignInService.initialize(
+        clientId: AppConfig.googleClientId.isEmpty ? null : AppConfig.googleClientId,
+        serverClientId: AppConfig.googleServerClientId,
+      );
+      await _googleSignInInitialization;
+      if (chooseAccount) {
+        await GoogleSignInService.reset();
+        _googleSignInInitialization = GoogleSignInService.initialize(
+          clientId: AppConfig.googleClientId.isEmpty ? null : AppConfig.googleClientId,
+          serverClientId: AppConfig.googleServerClientId,
+        );
+        await _googleSignInInitialization;
+      }
+      await GoogleSignInService.signOut();
+      final account = await GoogleSignIn.instance.authenticate();
+      final idToken = account.authentication.idToken;
+      if (idToken == null || idToken.isEmpty) {
+        throw StateError('Google did not return an ID token');
+      }
+
+      final result = await _authService.loginWithGoogle(idToken: idToken);
+      if (!mounted) return;
+      _handleLoginResult(result);
+    } catch (error) {
+      debugPrint('Google sign-in failed: $error');
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Google sign-in could not be completed. Please try again.';
+      });
+    }
+  }
+
+  Future<void> _loginWithGoogleToken(String idToken) async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    final result = await _authService.loginWithGoogle(idToken: idToken);
+    if (!mounted) return;
+    _handleLoginResult(result);
+  }
+
+  void _handleGoogleSignInError(Object error) {
+    debugPrint('Google sign-in failed: $error');
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+      _errorMessage = 'Google sign-in failed. Check the OAuth client ID and authorized origin.';
+    });
   }
 
   void _handleLoginResult(AuthResult result) {
@@ -502,6 +582,38 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
               ),
             ),
+            if (_authMode != AuthMode.verifyEmail) ...[
+              const SizedBox(height: 16),
+              const Row(
+                children: [
+                  Expanded(child: Divider(color: AppColors.cardBorder)),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    child: Text('OR', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                  ),
+                  Expanded(child: Divider(color: AppColors.cardBorder)),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (kIsWeb && AppConfig.googleClientId.isNotEmpty)
+                buildGoogleSignInWebButton(
+                  clientId: AppConfig.googleClientId,
+                  onIdToken: _loginWithGoogleToken,
+                  onError: _handleGoogleSignInError,
+                )
+              else
+                SizedBox(
+                  height: 48,
+                  child: OutlinedButton.icon(
+                    onPressed: _isLoading ? null : _signInWithGoogle,
+                    icon: const Text(
+                      'G',
+                      style: TextStyle(color: Color(0xFF4285F4), fontSize: 20, fontWeight: FontWeight.w700),
+                    ),
+                    label: const Text('Continue with Google'),
+                  ),
+                ),
+            ],
             const SizedBox(height: 20),
             Wrap(
               alignment: WrapAlignment.center,
