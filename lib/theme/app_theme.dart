@@ -33,6 +33,12 @@ class AppColors {
 }
 
 class AppTheme {
+  static const Color purple = AppColors.accentPurple;
+  static const Color lightBlue = AppColors.accentCyan;
+  static const Color primaryText = AppColors.textPrimary;
+  static const Color secondaryText = AppColors.textSecondary;
+  static const Color cardBackground = AppColors.cardSurface;
+  static const Color background = AppColors.midnightNavy;
   static ThemeData get theme {
     return ThemeData(
       useMaterial3: true,
