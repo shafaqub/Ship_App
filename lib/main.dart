@@ -2,10 +2,15 @@ import 'package:flutter/material.dart';
 
 import 'screens/login_screen.dart';
 import 'services/auth_service.dart';
+import 'services/revenuecat_service.dart';
 import 'splash_screen.dart';
 import 'theme/app_theme.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await RevenueCatService.initialize();
+
   runApp(const ShipApp());
 }
 
@@ -25,8 +30,10 @@ class ShipApp extends StatelessWidget {
       title: 'InterviewMe',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.theme,
-        home: showSplash
-          ? SplashScreen(nextScreen: LoginScreen(authService: authService))
+      home: showSplash
+          ? SplashScreen(
+              nextScreen: LoginScreen(authService: authService),
+            )
           : LoginScreen(authService: authService),
     );
   }

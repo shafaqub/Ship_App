@@ -26,11 +26,7 @@ class AppColors {
   );
 
   static const LinearGradient backgroundGradient = LinearGradient(
-    colors: [
-      Color(0xFF070910),
-      Color(0xFF0B0E17),
-      Color(0xFF131A2B),
-    ],
+    colors: [Color(0xFF070910), Color(0xFF0B0E17), Color(0xFF131A2B)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
@@ -49,7 +45,6 @@ class AppTheme {
         onSurface: AppColors.textPrimary,
         error: AppColors.error,
       ),
-      fontFamily: null,
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.midnightNavy,
         foregroundColor: AppColors.textPrimary,
@@ -100,10 +95,7 @@ class AppTheme {
         style: FilledButton.styleFrom(
           backgroundColor: AppColors.accentCyan,
           foregroundColor: AppColors.midnightNavy,
-          textStyle: const TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 16,
-          ),
+          textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -114,10 +106,7 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.textPrimary,
           side: const BorderSide(color: AppColors.accentCyan),
-          textStyle: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 15,
-          ),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -130,4 +119,6 @@ class AppTheme {
       ),
     );
   }
+
+  static ThemeData get darkTheme => theme;
 }

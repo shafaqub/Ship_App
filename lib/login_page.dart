@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'screens/overall_results_screen.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -43,7 +44,14 @@ class LoginPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   FilledButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const OverallResultsScreen(),
+                        ),
+                      );
+                    },
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFF7C6CFF),
                       foregroundColor: Colors.white,
