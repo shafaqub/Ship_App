@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../services/grok_voice_service.dart';
-import '../theme/app_theme.dart';
+import 'question_analysis_screen.dart';
 
-class OverallResultsScreen
-    extends StatelessWidget {
+class OverallResultsScreen extends StatelessWidget {
   final InterviewEvaluation evaluation;
 
   const OverallResultsScreen({
@@ -13,1068 +12,407 @@ class OverallResultsScreen
   });
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF020B1A),
       appBar: AppBar(
+        backgroundColor: const Color(0xFF020B1A),
+        elevation: 0,
+        automaticallyImplyLeading: false,
         title: const Text(
           'Interview Results',
           style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
-
       body: SafeArea(
         child: SingleChildScrollView(
-          padding:
-              const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildScoreSection(),
 
-          child: Center(
-            child: ConstrainedBox(
-              constraints:
-                  const BoxConstraints(
-                maxWidth: 900,
+              const SizedBox(height: 24),
+
+              _buildSummaryCard(),
+
+              const SizedBox(height: 20),
+
+              _buildPerformanceCard(),
+
+              const SizedBox(height: 20),
+
+              _buildRecommendationsCard(),
+
+              const SizedBox(height: 28),
+
+              _buildDetailedAnalysisButton(context),
+
+              const SizedBox(height: 14),
+
+              _buildDoneButton(context),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScoreSection() {
+    return Center(
+      child: Column(
+        children: [
+          const SizedBox(height: 8),
+
+          const Text(
+            'Interview Complete',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 26,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          Text(
+            'Here is your AI-generated performance report.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.60),
+              fontSize: 14,
+            ),
+          ),
+
+          const SizedBox(height: 26),
+
+          Container(
+            width: 150,
+            height: 150,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF0A1628),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.12),
+                width: 2,
               ),
-
+            ),
+            child: Center(
               child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment
-                        .stretch,
-
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const SizedBox(
-                    height: 10,
-                  ),
-
-                  const Text(
-                    'Interview Complete',
-                    textAlign:
-                        TextAlign.center,
-
-                    style: TextStyle(
-                      color:
-                          AppTheme.primaryText,
-                      fontSize: 26,
-                      fontWeight:
-                          FontWeight.bold,
+                  Text(
+                    '${evaluation.overallScore}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 42,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-
-                  const SizedBox(
-                    height: 8,
-                  ),
-
-                  const Text(
-                    'Your AI-generated interview evaluation is ready.',
-                    textAlign:
-                        TextAlign.center,
-
+                  Text(
+                    '/100',
                     style: TextStyle(
-                      color:
-                          AppTheme.secondaryText,
+                      color: Colors.white.withOpacity(0.55),
                       fontSize: 14,
                     ),
-                  ),
-
-                  const SizedBox(
-                    height: 24,
-                  ),
-
-                  // =====================================================
-                  // OVERALL SCORE
-                  // =====================================================
-
-                  Container(
-                    padding:
-                        const EdgeInsets.all(
-                      24,
-                    ),
-
-                    decoration:
-                        BoxDecoration(
-                      color:
-                          AppTheme.cardBackground,
-
-                      borderRadius:
-                          BorderRadius.circular(
-                        20,
-                      ),
-
-                      border: Border.all(
-                        color: AppTheme.purple
-                            .withOpacity(
-                          0.25,
-                        ),
-                      ),
-                    ),
-
-                    child: Column(
-                      children: [
-                        const Text(
-                          'Overall Score',
-                          style: TextStyle(
-                            color: AppTheme
-                                .secondaryText,
-                            fontSize: 14,
-                          ),
-                        ),
-
-                        const SizedBox(
-                          height: 8,
-                        ),
-
-                        Text(
-                          '${evaluation.overallScore}',
-                          style:
-                              const TextStyle(
-                            color:
-                                AppTheme.lightBlue,
-                            fontSize: 52,
-                            fontWeight:
-                                FontWeight.bold,
-                          ),
-                        ),
-
-                        const Text(
-                          '/ 100',
-                          style: TextStyle(
-                            color: AppTheme
-                                .secondaryText,
-                            fontSize: 14,
-                          ),
-                        ),
-
-                        const SizedBox(
-                          height: 16,
-                        ),
-
-                        ClipRRect(
-                          borderRadius:
-                              BorderRadius.circular(
-                            10,
-                          ),
-
-                          child:
-                              LinearProgressIndicator(
-                            value:
-                                _scoreValue(
-                              evaluation
-                                  .overallScore,
-                            ),
-
-                            minHeight: 9,
-
-                            backgroundColor:
-                                AppTheme
-                                    .background,
-
-                            valueColor:
-                                const AlwaysStoppedAnimation<
-                                    Color>(
-                              AppTheme.lightBlue,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(
-                    height: 16,
-                  ),
-
-                  // =====================================================
-                  // STATS
-                  // =====================================================
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child:
-                            _StatCard(
-                          title:
-                              'Questions',
-                          value: '5',
-                          icon:
-                              Icons.quiz_outlined,
-                        ),
-                      ),
-
-                      const SizedBox(
-                        width: 10,
-                      ),
-
-                      Expanded(
-                        child:
-                            _StatCard(
-                          title:
-                              'Technical',
-                          value:
-                              '${evaluation.technicalKnowledge}%',
-                          icon:
-                              Icons.code_rounded,
-                        ),
-                      ),
-
-                      const SizedBox(
-                        width: 10,
-                      ),
-
-                      Expanded(
-                        child:
-                            _StatCard(
-                          title:
-                              'Communication',
-                          value:
-                              '${evaluation.communication}%',
-                          icon:
-                              Icons.record_voice_over_outlined,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(
-                    height: 22,
-                  ),
-
-                  // =====================================================
-                  // PERFORMANCE
-                  // =====================================================
-
-                  const Text(
-                    'Performance Overview',
-                    style: TextStyle(
-                      color:
-                          AppTheme.primaryText,
-                      fontSize: 18,
-                      fontWeight:
-                          FontWeight.bold,
-                    ),
-                  ),
-
-                  const SizedBox(
-                    height: 10,
-                  ),
-
-                  _PerformanceCard(
-                    title:
-                        'Technical Knowledge',
-                    score:
-                        evaluation.technicalKnowledge,
-                  ),
-
-                  const SizedBox(
-                    height: 8,
-                  ),
-
-                  _PerformanceCard(
-                    title:
-                        'Communication',
-                    score:
-                        evaluation.communication,
-                  ),
-
-                  const SizedBox(
-                    height: 8,
-                  ),
-
-                  _PerformanceCard(
-                    title:
-                        'Clarity',
-                    score:
-                        evaluation.clarity,
-                  ),
-
-                  const SizedBox(
-                    height: 8,
-                  ),
-
-                  _PerformanceCard(
-                    title:
-                        'Confidence',
-                    score:
-                        evaluation.confidence,
-                  ),
-
-                  const SizedBox(
-                    height: 24,
-                  ),
-
-                  // =====================================================
-                  // AI SUMMARY
-                  // =====================================================
-
-                  _SectionTitle(
-                    title:
-                        'AI Summary',
-                  ),
-
-                  const SizedBox(
-                    height: 10,
-                  ),
-
-                  _InfoCard(
-                    child: Text(
-                      evaluation.summary,
-                      style:
-                          const TextStyle(
-                        color: AppTheme
-                            .secondaryText,
-                        fontSize: 13,
-                        height: 1.55,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(
-                    height: 24,
-                  ),
-
-                  // =====================================================
-                  // QUESTION-BY-QUESTION EVALUATION
-                  // =====================================================
-
-                  const Text(
-                    'Question-by-Question Analysis',
-                    style: TextStyle(
-                      color:
-                          AppTheme.primaryText,
-                      fontSize: 18,
-                      fontWeight:
-                          FontWeight.bold,
-                    ),
-                  ),
-
-                  const SizedBox(
-                    height: 10,
-                  ),
-
-                  ...evaluation.questions
-                      .map(
-                    (question) =>
-                        Padding(
-                      padding:
-                          const EdgeInsets.only(
-                        bottom: 12,
-                      ),
-
-                      child:
-                          _QuestionEvaluationCard(
-                        evaluation:
-                            question,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(
-                    height: 12,
-                  ),
-
-                  // =====================================================
-                  // RECOMMENDATIONS
-                  // =====================================================
-
-                  if (evaluation
-                      .recommendations
-                      .isNotEmpty) ...[
-                    const Text(
-                      'Recommendations',
-                      style:
-                          TextStyle(
-                        color: AppTheme
-                            .primaryText,
-                        fontSize: 18,
-                        fontWeight:
-                            FontWeight.bold,
-                      ),
-                    ),
-
-                    const SizedBox(
-                      height: 10,
-                    ),
-
-                    _InfoCard(
-                      child:
-                          Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment
-                                .start,
-
-                        children: evaluation
-                            .recommendations
-                            .map(
-                          (recommendation) =>
-                              Padding(
-                            padding:
-                                const EdgeInsets.only(
-                              bottom: 10,
-                            ),
-
-                            child:
-                                Row(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment
-                                      .start,
-
-                              children: [
-                                const Icon(
-                                  Icons
-                                      .check_circle_outline,
-                                  color:
-                                      AppTheme.lightBlue,
-                                  size:
-                                      18,
-                                ),
-
-                                const SizedBox(
-                                  width: 9,
-                                ),
-
-                                Expanded(
-                                  child:
-                                      Text(
-                                    recommendation,
-                                    style:
-                                        const TextStyle(
-                                      color:
-                                          AppTheme.secondaryText,
-                                      fontSize:
-                                          13,
-                                      height:
-                                          1.45,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ).toList(),
-                      ),
-                    ),
-                  ],
-
-                  const SizedBox(
-                    height: 20,
                   ),
                 ],
               ),
             ),
           ),
+
+          const SizedBox(height: 16),
+
+          const Text(
+            'Overall Score',
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryCard() {
+    return _buildCard(
+      title: 'Overall Feedback',
+      icon: Icons.auto_awesome,
+      child: Text(
+        evaluation.summary,
+        style: TextStyle(
+          color: Colors.white.withOpacity(0.80),
+          fontSize: 14,
+          height: 1.6,
         ),
       ),
     );
   }
 
-  double _scoreValue(
+  Widget _buildPerformanceCard() {
+    return _buildCard(
+      title: 'Performance Breakdown',
+      icon: Icons.analytics_outlined,
+      child: Column(
+        children: [
+          _buildPerformanceRow(
+            'Technical Knowledge',
+            evaluation.technicalKnowledge,
+          ),
+          const SizedBox(height: 16),
+          _buildPerformanceRow(
+            'Communication',
+            evaluation.communication,
+          ),
+          const SizedBox(height: 16),
+          _buildPerformanceRow(
+            'Clarity',
+            evaluation.clarity,
+          ),
+          const SizedBox(height: 16),
+          _buildPerformanceRow(
+            'Confidence',
+            evaluation.confidence,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPerformanceRow(
+    String title,
     int score,
   ) {
-    return (score.clamp(0, 100)) / 100;
-  }
-}
+    final safeScore = score.clamp(0, 100);
 
-// ================================================================
-// SECTION TITLE
-// ================================================================
-
-class _SectionTitle
-    extends StatelessWidget {
-  final String title;
-
-  const _SectionTitle({
-    required this.title,
-  });
-
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return Text(
-      title,
-      style: const TextStyle(
-        color:
-            AppTheme.primaryText,
-        fontSize: 18,
-        fontWeight:
-            FontWeight.bold,
-      ),
-    );
-  }
-}
-
-// ================================================================
-// INFO CARD
-// ================================================================
-
-class _InfoCard
-    extends StatelessWidget {
-  final Widget child;
-
-  const _InfoCard({
-    required this.child,
-  });
-
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return Container(
-      padding:
-          const EdgeInsets.all(16),
-
-      decoration:
-          BoxDecoration(
-        color:
-            AppTheme.cardBackground,
-
-        borderRadius:
-            BorderRadius.circular(
-          14,
-        ),
-
-        border: Border.all(
-          color: AppTheme.purple
-              .withOpacity(
-            0.12,
-          ),
-        ),
-      ),
-
-      child: child,
-    );
-  }
-}
-
-// ================================================================
-// STAT CARD
-// ================================================================
-
-class _StatCard
-    extends StatelessWidget {
-  final String title;
-  final String value;
-  final IconData icon;
-
-  const _StatCard({
-    required this.title,
-    required this.value,
-    required this.icon,
-  });
-
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return Container(
-      padding:
-          const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 14,
-      ),
-
-      decoration:
-          BoxDecoration(
-        color:
-            AppTheme.cardBackground,
-
-        borderRadius:
-            BorderRadius.circular(
-          14,
-        ),
-
-        border: Border.all(
-          color: AppTheme.lightBlue
-              .withOpacity(
-            0.12,
-          ),
-        ),
-      ),
-
-      child: Column(
-        children: [
-          Icon(
-            icon,
-            color:
-                AppTheme.lightBlue,
-            size: 20,
-          ),
-
-          const SizedBox(
-            height: 7,
-          ),
-
-          Text(
-            value,
-            style:
-                const TextStyle(
-              color:
-                  AppTheme.primaryText,
-              fontSize: 17,
-              fontWeight:
-                  FontWeight.bold,
-            ),
-          ),
-
-          const SizedBox(
-            height: 3,
-          ),
-
-          Text(
-            title,
-            textAlign:
-                TextAlign.center,
-            maxLines: 1,
-            overflow:
-                TextOverflow.ellipsis,
-
-            style:
-                const TextStyle(
-              color:
-                  AppTheme.secondaryText,
-              fontSize: 9.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ================================================================
-// PERFORMANCE CARD
-// ================================================================
-
-class _PerformanceCard
-    extends StatelessWidget {
-  final String title;
-  final int score;
-
-  const _PerformanceCard({
-    required this.title,
-    required this.score,
-  });
-
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return Container(
-      padding:
-          const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 12,
-      ),
-
-      decoration:
-          BoxDecoration(
-        color:
-            AppTheme.cardBackground,
-
-        borderRadius:
-            BorderRadius.circular(
-          13,
-        ),
-
-        border: Border.all(
-          color: AppTheme.purple
-              .withOpacity(
-            0.12,
-          ),
-        ),
-      ),
-
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              title,
-              style:
-                  const TextStyle(
-                color:
-                    AppTheme.primaryText,
-                fontSize: 12.5,
-                fontWeight:
-                    FontWeight.w500,
-              ),
-            ),
-          ),
-
-          const SizedBox(
-            width: 12,
-          ),
-
-          SizedBox(
-            width: 90,
-
-            child:
-                ClipRRect(
-              borderRadius:
-                  BorderRadius.circular(
-                6,
-              ),
-
-              child:
-                  LinearProgressIndicator(
-                value:
-                    score.clamp(
-                          0,
-                          100,
-                        ) /
-                        100,
-
-                minHeight: 6,
-
-                backgroundColor:
-                    AppTheme.background,
-
-                valueColor:
-                    const AlwaysStoppedAnimation<
-                        Color>(
-                  AppTheme.lightBlue,
-                ),
-              ),
-            ),
-          ),
-
-          const SizedBox(
-            width: 10,
-          ),
-
-          SizedBox(
-            width: 35,
-
-            child: Text(
-              '$score%',
-              textAlign:
-                  TextAlign.right,
-
-              style:
-                  const TextStyle(
-                color:
-                    AppTheme.lightBlue,
-                fontSize: 11,
-                fontWeight:
-                    FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ================================================================
-// QUESTION EVALUATION CARD
-// ================================================================
-
-class _QuestionEvaluationCard
-    extends StatelessWidget {
-  final QuestionEvaluation evaluation;
-
-  const _QuestionEvaluationCard({
-    required this.evaluation,
-  });
-
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return Container(
-      padding:
-          const EdgeInsets.all(16),
-
-      decoration:
-          BoxDecoration(
-        color:
-            AppTheme.cardBackground,
-
-        borderRadius:
-            BorderRadius.circular(
-          16,
-        ),
-
-        border: Border.all(
-          color: AppTheme.purple
-              .withOpacity(
-            0.14,
-          ),
-        ),
-      ),
-
-      child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment
-                .start,
-
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 34,
-                height: 34,
-
-                alignment:
-                    Alignment.center,
-
-                decoration:
-                    BoxDecoration(
-                  color: AppTheme.lightBlue
-                      .withOpacity(
-                    0.12,
-                  ),
-
-                  shape:
-                      BoxShape.circle,
-                ),
-
-                child: Text(
-                  '${evaluation.questionNumber}',
-                  style:
-                      const TextStyle(
-                    color:
-                        AppTheme.lightBlue,
-                    fontWeight:
-                        FontWeight.bold,
-                  ),
-                ),
-              ),
-
-              const SizedBox(
-                width: 10,
-              ),
-
-              const Expanded(
-                child: Text(
-                  'Interview Question',
-                  style:
-                      TextStyle(
-                    color:
-                        AppTheme.secondaryText,
-                    fontSize: 12,
-                    fontWeight:
-                        FontWeight.w500,
-                  ),
-                ),
-              ),
-
-              Text(
-                '${evaluation.score}/100',
-                style:
-                    const TextStyle(
-                  color:
-                      AppTheme.lightBlue,
-                  fontSize: 15,
-                  fontWeight:
-                      FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(
-            height: 14,
-          ),
-
-          const Text(
-            'Question',
-            style:
-                TextStyle(
-              color:
-                  AppTheme.primaryText,
-              fontSize: 12,
-              fontWeight:
-                  FontWeight.bold,
-            ),
-          ),
-
-          const SizedBox(
-            height: 5,
-          ),
-
-          Text(
-            evaluation.question,
-            style:
-                const TextStyle(
-              color:
-                  AppTheme.secondaryText,
-              fontSize: 13,
-              height: 1.45,
-            ),
-          ),
-
-          const SizedBox(
-            height: 14,
-          ),
-
-          const Text(
-            'Your Answer',
-            style:
-                TextStyle(
-              color:
-                  AppTheme.primaryText,
-              fontSize: 12,
-              fontWeight:
-                  FontWeight.bold,
-            ),
-          ),
-
-          const SizedBox(
-            height: 5,
-          ),
-
-          Container(
-            width:
-                double.infinity,
-
-            padding:
-                const EdgeInsets.all(
-              12,
-            ),
-
-            decoration:
-                BoxDecoration(
-              color:
-                  AppTheme.background,
-
-              borderRadius:
-                  BorderRadius.circular(
-                10,
-              ),
-            ),
-
-            child: Text(
-              evaluation.answer.isEmpty
-                  ? 'No answer recorded.'
-                  : evaluation.answer,
-
-              style:
-                  const TextStyle(
-                color:
-                    AppTheme.secondaryText,
-                fontSize: 12.5,
-                height: 1.45,
-              ),
-            ),
-          ),
-
-          const SizedBox(
-            height: 14,
-          ),
-
-          _FeedbackRow(
-            title: 'Feedback',
-            text:
-                evaluation.feedback,
-            icon:
-                Icons.analytics_outlined,
-          ),
-
-          const SizedBox(
-            height: 10,
-          ),
-
-          _FeedbackRow(
-            title: 'Strength',
-            text:
-                evaluation.strength,
-            icon:
-                Icons.check_circle_outline,
-          ),
-
-          const SizedBox(
-            height: 10,
-          ),
-
-          _FeedbackRow(
-            title: 'Improve',
-            text:
-                evaluation.improvement,
-            icon:
-                Icons.trending_up_rounded,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ================================================================
-// FEEDBACK ROW
-// ================================================================
-
-class _FeedbackRow
-    extends StatelessWidget {
-  final String title;
-  final String text;
-  final IconData icon;
-
-  const _FeedbackRow({
-    required this.title,
-    required this.text,
-    required this.icon,
-  });
-
-  @override
-  Widget build(
-    BuildContext context,
-  ) {
-    return Row(
-      crossAxisAlignment:
-          CrossAxisAlignment.start,
-
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          icon,
-          color:
-              AppTheme.lightBlue,
-          size: 18,
-        ),
-
-        const SizedBox(
-          width: 9,
-        ),
-
-        Expanded(
-          child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment
-                    .start,
-
-            children: [
-              Text(
+        Row(
+          children: [
+            Expanded(
+              child: Text(
                 title,
-                style:
-                    const TextStyle(
-                  color:
-                      AppTheme.primaryText,
-                  fontSize: 12,
-                  fontWeight:
-                      FontWeight.bold,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
                 ),
               ),
-
-              const SizedBox(
-                height: 3,
+            ),
+            Text(
+              '$safeScore/100',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
               ),
+            ),
+          ],
+        ),
 
-              Text(
-                text,
-                style:
-                    const TextStyle(
-                  color:
-                      AppTheme.secondaryText,
-                  fontSize: 12,
-                  height: 1.45,
-                ),
-              ),
-            ],
+        const SizedBox(height: 8),
+
+        ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: LinearProgressIndicator(
+            value: safeScore / 100,
+            minHeight: 7,
+            backgroundColor: Colors.white.withOpacity(0.08),
           ),
         ),
       ],
     );
   }
+
+  Widget _buildRecommendationsCard() {
+    final recommendations = evaluation.recommendations;
+
+    return _buildCard(
+      title: 'Areas to Improve',
+      icon: Icons.trending_up,
+      child: recommendations.isEmpty
+          ? Text(
+              'No additional recommendations were provided.',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.65),
+                fontSize: 14,
+              ),
+            )
+          : Column(
+              children: List.generate(
+                recommendations.length,
+                (index) {
+                  return Padding(
+                    padding: EdgeInsets.only(
+                      bottom: index == recommendations.length - 1 ? 0 : 14,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 24,
+                          height: 24,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.08),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            '${index + 1}',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            recommendations[index],
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.78),
+                              fontSize: 14,
+                              height: 1.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+    );
+  }
+
+  Widget _buildDetailedAnalysisButton(
+    BuildContext context,
+  ) {
+    return SizedBox(
+      width: double.infinity,
+      height: 54,
+      child: ElevatedButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => QuestionAnalysisScreen(
+                evaluation: evaluation,
+              ),
+            ),
+          );
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.white,
+          foregroundColor: const Color(0xFF020B1A),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.analytics_outlined,
+              size: 20,
+            ),
+            SizedBox(width: 9),
+            Text(
+              'View Detailed Analysis',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDoneButton(
+    BuildContext context,
+  ) {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: OutlinedButton(
+        onPressed: () {
+          Navigator.popUntil(
+            context,
+            (route) => route.isFirst,
+          );
+        },
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.white70,
+          side: BorderSide(
+            color: Colors.white.withOpacity(0.12),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+        ),
+        child: const Text(
+          'Done',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCard({
+    required String title,
+    required IconData icon,
+    required Widget child,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(19),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0A1628),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.07),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                icon,
+                color: Colors.white70,
+                size: 19,
+              ),
+              const SizedBox(width: 9),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          child,
+        ],
+      ),
+    );
+  }
 }
+
