@@ -1,5 +1,5 @@
+
 import 'package:purchases_flutter/purchases_flutter.dart';
-import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 
 class RevenueCatService {
   static const String entitlementId = 'Premium';
@@ -16,8 +16,9 @@ class RevenueCatService {
   static Future<bool> isPremium() async {
     final customerInfo = await Purchases.getCustomerInfo();
 
-    return customerInfo.entitlements.active
-        .containsKey(entitlementId);
+    return customerInfo.entitlements.active.containsKey(
+      entitlementId,
+    );
   }
 
   static Future<Offerings> getOfferings() async {
@@ -29,16 +30,8 @@ class RevenueCatService {
 
     final offering = offerings.current;
 
-    if (offering == null) {
-      throw Exception(
-        'No current RevenueCat offering is configured.',
-      );
-    }
-
-    if (offering.monthly == null) {
-      throw Exception(
-        'No monthly package is configured in the current offering.',
-      );
+    if (offering == null || offering.monthly == null) {
+      return null;
     }
 
     final result = await Purchases.purchasePackage(
@@ -48,4 +41,3 @@ class RevenueCatService {
     return result.customerInfo;
   }
 }
-

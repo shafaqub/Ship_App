@@ -1,114 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 
-import '../theme/app_theme.dart';
+import '../services/grok_voice_service.dart';
 import '../services/revenue_cat_service.dart';
 
 class QuestionAnalysisScreen extends StatefulWidget {
-  const QuestionAnalysisScreen({super.key});
+  final InterviewEvaluation evaluation;
+
+  const QuestionAnalysisScreen({
+    super.key,
+    required this.evaluation,
+  });
 
   @override
   State<QuestionAnalysisScreen> createState() =>
       _QuestionAnalysisScreenState();
 }
 
-class _QuestionAnalysisScreenState
-    extends State<QuestionAnalysisScreen> {
-  bool isPremium = false;
-  bool _openingPaywall = false;
+class _QuestionAnalysisScreenState extends State<QuestionAnalysisScreen> {
+  static const int freeQuestionLimit = 2;
 
-  static const List<_QuestionFeedback> _questions = [
-    _QuestionFeedback(
-      number: 1,
-      question:
-          'What is the difference between let, const, and var in JavaScript?',
-      answer:
-          'Let is used for defining a variable, var is also for variables, and const is for a constant.',
-      score: 82,
-      strengths: [
-        'Identified the main purpose of the three declarations',
-        'Answer was direct and easy to understand',
-        'Demonstrated basic JavaScript knowledge',
-      ],
-      improvements: [
-        'Explain scope differences between var and let',
-        'Mention that const prevents reassignment',
-        'Give a small practical example',
-      ],
-    ),
-    _QuestionFeedback(
-      number: 2,
-      question:
-          'How would you make a website responsive for different screen sizes?',
-      answer:
-          'I would use responsive CSS and media queries so the website can adjust according to the screen size. I would also make sure the layout works on mobile and desktop.',
-      score: 86,
-      strengths: [
-        'Correctly mentioned responsive CSS',
-        'Included media queries',
-        'Considered both mobile and desktop layouts',
-      ],
-      improvements: [
-        'Mention flexible layouts such as Flexbox or Grid',
-        'Explain responsive units such as percentages or rem',
-        'Discuss testing across different screen sizes',
-      ],
-    ),
-    _QuestionFeedback(
-      number: 3,
-      question:
-          'What happens when you enter a URL into a web browser?',
-      answer:
-          'The browser sends a request to the server and receives the website. Then the browser loads and displays the page.',
-      score: 78,
-      strengths: [
-        'Understood the request and response concept',
-        'Correctly connected the browser with the server',
-        'Explained the process in simple terms',
-      ],
-      improvements: [
-        'Mention DNS resolution',
-        'Explain HTTP or HTTPS communication',
-        'Describe how the browser parses and renders the response',
-      ],
-    ),
-    _QuestionFeedback(
-      number: 4,
-      question:
-          'How would you debug a JavaScript function that is not working correctly?',
-      answer:
-          'I would first check the console for errors and then look at the code to find where the problem is. I would test different parts of the function to understand what is causing the issue.',
-      score: 80,
-      strengths: [
-        'Started with checking console errors',
-        'Used a logical debugging approach',
-        'Focused on isolating the problem',
-      ],
-      improvements: [
-        'Mention browser developer tools',
-        'Use breakpoints and inspect variable values',
-        'Explain how you would reproduce the problem consistently',
-      ],
-    ),
-    _QuestionFeedback(
-      number: 5,
-      question:
-          'How would you optimize a front-end application that is loading slowly?',
-      answer:
-          'I would check what is making the website slow and then optimize the code and resources. I would reduce unnecessary files and make sure images and other resources are optimized.',
-      score: 84,
-      strengths: [
-        'Recognized that the bottleneck should be identified first',
-        'Mentioned optimizing resources',
-        'Considered unnecessary files and assets',
-      ],
-      improvements: [
-        'Mention browser performance tools',
-        'Discuss image compression and lazy loading',
-        'Mention reducing unnecessary JavaScript and network requests',
-      ],
-    ),
-  ];
+  bool _isPremium = false;
+  bool _checkingPremium = true;
+  bool _unlockingPremium = false;
 
   @override
   void initState() {
@@ -123,595 +37,591 @@ class _QuestionAnalysisScreenState
       if (!mounted) return;
 
       setState(() {
-        isPremium = premium;
+        _isPremium = premium;
+        _checkingPremium = false;
       });
     } catch (e) {
-      debugPrint('RevenueCat entitlement check failed: $e');
+      debugPrint('RevenueCat premium check failed: $e');
 
       if (!mounted) return;
 
       setState(() {
-        isPremium = false;
+        _isPremium = false;
+        _checkingPremium = false;
       });
     }
   }
 
-  /// Opens the actual RevenueCat Paywall.
-  ///
-  /// RevenueCat handles:
-  /// - subscription products
-  /// - pricing
-  /// - purchase button
-  /// - Google Play purchase flow
-  /// - restore purchases
-  /// - paywall design configured in RevenueCat
-  Future<void> _showRevenueCatPaywall() async {
-    if (_openingPaywall) return;
+  Future<void> _unlockPremium() async {
+    if (_unlockingPremium) return;
 
     setState(() {
-      _openingPaywall = true;
+      _unlockingPremium = true;
     });
 
     try {
-      final result = await RevenueCatUI.presentPaywall();
+      /*
+       * RevenueCat displays the actual configured paywall here.
+       *
+       * The paywall contains the subscription information,
+       * monthly price, Subscribe button, restore option, etc.
+       */
+      await RevenueCatUI.presentPaywall();
 
-      debugPrint('RevenueCat Paywall result: $result');
-
-      // Check entitlement again after the paywall closes.
-      await _checkPremiumStatus();
+      /*
+       * After the paywall closes, check RevenueCat again.
+       *
+       * If the user successfully subscribed, the Premium
+       * entitlement will now be active.
+       */
+      final premium = await RevenueCatService.isPremium();
 
       if (!mounted) return;
 
-      if (isPremium) {
+      setState(() {
+        _isPremium = premium;
+        _unlockingPremium = false;
+      });
+
+      if (premium) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Premium unlocked successfully!',
+              'Premium unlocked. All detailed analyses are now available.',
             ),
           ),
         );
       }
     } catch (e) {
-      debugPrint(
-        'RevenueCat Paywall error: $e',
-      );
+      debugPrint('RevenueCat paywall error: $e');
 
       if (!mounted) return;
+
+      setState(() {
+        _unlockingPremium = false;
+      });
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Unable to open the premium subscription.',
+            'Unable to open the Premium subscription. Please try again.',
           ),
         ),
       );
-    } finally {
-      if (!mounted) return;
-
-      setState(() {
-        _openingPaywall = false;
-      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final visibleQuestions = isPremium
-        ? _questions
-        : _questions.take(3).toList();
+    final questions = widget.evaluation.questions;
 
     return Scaffold(
+      backgroundColor: const Color(0xFF020B1A),
       appBar: AppBar(
-        toolbarHeight: 48,
+        backgroundColor: const Color(0xFF020B1A),
+        elevation: 0,
         title: const Text(
-          'Detailed Feedback',
+          'Detailed Analysis',
           style: TextStyle(
-            fontSize: 17,
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        iconTheme: const IconThemeData(
+          color: Colors.white,
+        ),
+      ),
+      body: _checkingPremium
+          ? const Center(
+              child: CircularProgressIndicator(),
+            )
+          : ListView(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+              children: [
+                _buildHeader(),
+
+                const SizedBox(height: 24),
+
+                ...List.generate(
+                  questions.length,
+                  (index) {
+                    final isLocked =
+                        !_isPremium && index >= freeQuestionLimit;
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 18),
+                      child: isLocked
+                          ? _buildLockedQuestionCard(
+                              index,
+                              questions[index],
+                            )
+                          : _buildQuestionCard(
+                              index,
+                              questions[index],
+                            ),
+                    );
+                  },
+                ),
+
+                if (!_isPremium &&
+                    questions.length > freeQuestionLimit) ...[
+                  const SizedBox(height: 8),
+                  _buildPremiumSection(),
+                ],
+              ],
+            ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Your Interview Analysis',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 25,
             fontWeight: FontWeight.bold,
           ),
         ),
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(
-            14,
-            8,
-            14,
-            18,
-          ),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: 1000,
-              ),
-              child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 34,
-                        height: 34,
-                        decoration: BoxDecoration(
-                          color:
-                              AppTheme.purple.withOpacity(0.12),
-                          borderRadius:
-                              BorderRadius.circular(10),
-                        ),
-                        child: const Icon(
-                          Icons.analytics_outlined,
-                          color: AppTheme.lightBlue,
-                          size: 18,
-                        ),
-                      ),
-                      const SizedBox(width: 9),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Question Analysis',
-                              style: TextStyle(
-                                color:
-                                    AppTheme.primaryText,
-                                fontSize: 20,
-                                fontWeight:
-                                    FontWeight.bold,
-                              ),
-                            ),
-                            SizedBox(height: 2),
-                            Text(
-                              'Review your performance on each question.',
-                              style: TextStyle(
-                                color:
-                                    AppTheme.secondaryText,
-                                fontSize: 11.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  for (final feedback in visibleQuestions) ...[
-                    _QuestionCard(
-                      feedback: feedback,
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-
-                  if (!isPremium) ...[
-                    _PremiumLock(
-                      isLoading: _openingPaywall,
-                      onUnlock: _showRevenueCatPaywall,
-                    ),
-                    const SizedBox(height: 14),
-                  ],
-
-                  if (isPremium) ...[
-                    const _OverallImprovement(),
-                    const SizedBox(height: 14),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _QuestionCard extends StatelessWidget {
-  final _QuestionFeedback feedback;
-
-  const _QuestionCard({
-    required this.feedback,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppTheme.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppTheme.purple.withOpacity(0.16),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'QUESTION ${feedback.number}',
-                  style: const TextStyle(
-                    color: AppTheme.lightBlue,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.6,
-                  ),
-                ),
-              ),
-              _ScoreBadge(
-                score: feedback.score,
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 8),
-
-          Text(
-            feedback.question,
-            style: const TextStyle(
-              color: AppTheme.primaryText,
-              fontSize: 14.5,
-              fontWeight: FontWeight.w600,
-              height: 1.3,
-            ),
-          ),
-
-          const SizedBox(height: 11),
-
-          const _SectionLabel(
-            icon: Icons.record_voice_over_outlined,
-            title: 'Your Answer',
-          ),
-
-          const SizedBox(height: 6),
-
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: AppTheme.background,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(
-              '"${feedback.answer}"',
-              style: const TextStyle(
-                color: AppTheme.secondaryText,
-                fontSize: 11.5,
-                height: 1.4,
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 11),
-
-          const _SectionLabel(
-            icon: Icons.check_circle_outline_rounded,
-            title: 'What You Did Well',
-          ),
-
-          const SizedBox(height: 6),
-
-          for (final item in feedback.strengths)
-            _BulletItem(
-              icon: Icons.check_rounded,
-              text: item,
-            ),
-
-          const SizedBox(height: 7),
-
-          const _SectionLabel(
-            icon: Icons.trending_up_rounded,
-            title: 'Needs Improvement',
-          ),
-
-          const SizedBox(height: 6),
-
-          for (final item in feedback.improvements)
-            _BulletItem(
-              icon: Icons.arrow_forward_rounded,
-              text: item,
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ScoreBadge extends StatelessWidget {
-  final int score;
-
-  const _ScoreBadge({
-    required this.score,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 8,
-        vertical: 4,
-      ),
-      decoration: BoxDecoration(
-        color: AppTheme.lightBlue.withOpacity(0.10),
-        borderRadius: BorderRadius.circular(9),
-        border: Border.all(
-          color: AppTheme.lightBlue.withOpacity(0.20),
-        ),
-      ),
-      child: Text(
-        '$score/100',
-        style: const TextStyle(
-          color: AppTheme.lightBlue,
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-}
-
-class _SectionLabel extends StatelessWidget {
-  final IconData icon;
-  final String title;
-
-  const _SectionLabel({
-    required this.icon,
-    required this.title,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          color: AppTheme.lightBlue,
-          size: 15,
-        ),
-        const SizedBox(width: 6),
+        const SizedBox(height: 8),
         Text(
-          title,
-          style: const TextStyle(
-            color: AppTheme.primaryText,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
+          _isPremium
+              ? 'Premium unlocked — you can view detailed feedback for all questions.'
+              : 'Your first 2 question analyses are free. Unlock Premium to see the remaining analyses.',
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.65),
+            fontSize: 14,
+            height: 1.5,
           ),
         ),
       ],
     );
   }
-}
 
-class _BulletItem extends StatelessWidget {
-  final IconData icon;
-  final String text;
+  Widget _buildQuestionCard(
+    int index,
+    dynamic question,
+  ) {
+    final questionNumber = _getQuestionNumber(question, index);
+    final questionText = _getQuestionText(question);
+    final answer = _getAnswer(question);
+    final score = _getScore(question);
+    final feedback = _getFeedback(question);
+    final strength = _getStrength(question);
+    final improvement = _getImprovement(question);
 
-  const _BulletItem({
-    required this.icon,
-    required this.text,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 5),
-      child: Row(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
-        children: [
-          Icon(
-            icon,
-            color: AppTheme.lightBlue,
-            size: 13,
-          ),
-          const SizedBox(width: 7),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(
-                color: AppTheme.secondaryText,
-                fontSize: 11.5,
-                height: 1.3,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PremiumLock extends StatelessWidget {
-  final bool isLoading;
-  final VoidCallback onUnlock;
-
-  const _PremiumLock({
-    required this.isLoading,
-    required this.onUnlock,
-  });
-
-  @override
-  Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 18,
-      ),
       decoration: BoxDecoration(
-        color: AppTheme.cardBackground,
-        borderRadius: BorderRadius.circular(16),
+        color: const Color(0xFF0A1628),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: AppTheme.purple.withOpacity(0.28),
+          color: Colors.white.withOpacity(0.08),
         ),
       ),
+      padding: const EdgeInsets.all(20),
       child: Column(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: AppTheme.purple.withOpacity(0.12),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.lock_outline_rounded,
-              color: AppTheme.lightBlue,
-              size: 21,
-            ),
-          ),
-
-          const SizedBox(height: 9),
-
-          const Text(
-            'Unlock Full Analysis',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppTheme.primaryText,
-              fontSize: 15.5,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-
-          const SizedBox(height: 5),
-
-          const Text(
-            'Subscribe to unlock questions 4–5 and your complete improvement report.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppTheme.secondaryText,
-              fontSize: 11.5,
-              height: 1.4,
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: isLoading
-                  ? null
-                  : onUnlock,
-              icon: isLoading
-                  ? const SizedBox(
-                      width: 17,
-                      height: 17,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Icon(
-                      Icons.workspace_premium_outlined,
-                      size: 17,
-                    ),
-              label: Text(
-                isLoading
-                    ? 'Opening Premium...'
-                    : 'Unlock Premium',
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.purple,
-                disabledBackgroundColor:
-                    AppTheme.purple.withOpacity(0.5),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 11,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(11),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _OverallImprovement extends StatelessWidget {
-  const _OverallImprovement();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppTheme.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppTheme.purple.withOpacity(0.18),
-        ),
-      ),
-      child: const Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                Icons.auto_awesome,
-                color: AppTheme.purple,
-                size: 19,
+              Container(
+                width: 42,
+                height: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF162B49),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '$questionNumber',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
               ),
-              SizedBox(width: 7),
-              Text(
-                'Overall Improvement Suggestions',
-                style: TextStyle(
-                  color: AppTheme.primaryText,
-                  fontSize: 15.5,
-                  fontWeight: FontWeight.bold,
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  questionText,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    height: 1.4,
+                  ),
                 ),
               ),
             ],
           ),
 
-          SizedBox(height: 10),
+          const SizedBox(height: 20),
+
+          _buildScore(score),
+
+          const SizedBox(height: 20),
+
+          _buildAnalysisSection(
+            title: 'Your Answer',
+            icon: Icons.record_voice_over_outlined,
+            text: answer,
+          ),
+
+          const SizedBox(height: 16),
+
+          _buildAnalysisSection(
+            title: 'AI Feedback',
+            icon: Icons.auto_awesome,
+            text: feedback,
+          ),
+
+          const SizedBox(height: 16),
+
+          _buildAnalysisSection(
+            title: 'Strength',
+            icon: Icons.check_circle_outline,
+            text: strength,
+          ),
+
+          const SizedBox(height: 16),
+
+          _buildAnalysisSection(
+            title: 'Improvement',
+            icon: Icons.trending_up,
+            text: improvement,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLockedQuestionCard(
+    int index,
+    dynamic question,
+  ) {
+    final questionNumber = _getQuestionNumber(question, index);
+    final questionText = _getQuestionText(question);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF091321),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.07),
+        ),
+      ),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF182438),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.lock_outline,
+                  color: Colors.white70,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  'Question $questionNumber',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const Icon(
+                Icons.workspace_premium_outlined,
+                color: Colors.amber,
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
 
           Text(
-            'Your interview shows a good foundation in front-end development and communication. To improve your technical interview performance, make your answers more structured and support technical concepts with short practical examples. When explaining a process, describe the steps in order instead of giving only a general overview. Continue practicing JavaScript fundamentals, browser concepts, responsive design, and debugging scenarios. Aim to answer confidently while keeping your responses focused and specific.',
+            questionText,
             style: TextStyle(
-              color: AppTheme.secondaryText,
-              fontSize: 11.5,
-              height: 1.45,
+              color: Colors.white.withOpacity(0.45),
+              fontSize: 15,
+              height: 1.4,
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Row(
+              children: [
+                Icon(
+                  Icons.lock_outline,
+                  color: Colors.white54,
+                  size: 18,
+                ),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Detailed AI analysis is available with Premium.',
+                    style: TextStyle(
+                      color: Colors.white60,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
   }
-}
 
-class _QuestionFeedback {
-  final int number;
-  final String question;
-  final String answer;
-  final int score;
-  final List<String> strengths;
-  final List<String> improvements;
+  Widget _buildPremiumSection() {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: const Color(0xFF101D31),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Colors.amber.withOpacity(0.25),
+        ),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: Colors.amber.withOpacity(0.12),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.workspace_premium,
+              color: Colors.amber,
+              size: 28,
+            ),
+          ),
 
-  const _QuestionFeedback({
-    required this.number,
-    required this.question,
-    required this.answer,
-    required this.score,
-    required this.strengths,
-    required this.improvements,
-  });
+          const SizedBox(height: 14),
+
+          const Text(
+            'Unlock Full Analysis',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          Text(
+            'Get detailed AI feedback for Questions 3–5 and access the complete interview analysis.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.65),
+              fontSize: 14,
+              height: 1.5,
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton(
+              onPressed: _unlockingPremium ? null : _unlockPremium,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.amber,
+                foregroundColor: Colors.black,
+                disabledBackgroundColor: Colors.amber.withOpacity(0.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: _unlockingPremium
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.black,
+                      ),
+                    )
+                  : const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.workspace_premium, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'Unlock Premium',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScore(int score) {
+    return Row(
+      children: [
+        const Text(
+          'AI Score',
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 13,
+          ),
+        ),
+        const Spacer(),
+        Text(
+          '$score/100',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAnalysisSection({
+    required String title,
+    required IconData icon,
+    required String text,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(13),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                icon,
+                size: 17,
+                color: Colors.white70,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 9),
+          Text(
+            text.isEmpty ? 'No analysis available.' : text,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.82),
+              fontSize: 14,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  int _getQuestionNumber(dynamic question, int index) {
+    try {
+      return question.questionNumber as int;
+    } catch (_) {
+      return index + 1;
+    }
+  }
+
+  String _getQuestionText(dynamic question) {
+    try {
+      return question.question?.toString() ?? '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  String _getAnswer(dynamic question) {
+    try {
+      return question.answer?.toString() ?? '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  int _getScore(dynamic question) {
+    try {
+      final value = question.score;
+
+      if (value is int) {
+        return value;
+      }
+
+      return int.tryParse(value.toString()) ?? 0;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  String _getFeedback(dynamic question) {
+    try {
+      return question.feedback?.toString() ?? '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  String _getStrength(dynamic question) {
+    try {
+      return question.strength?.toString() ?? '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  String _getImprovement(dynamic question) {
+    try {
+      return question.improvement?.toString() ?? '';
+    } catch (_) {
+      return '';
+    }
+  }
 }
 

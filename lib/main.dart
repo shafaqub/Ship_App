@@ -4,8 +4,14 @@ import 'screens/login_screen.dart';
 import 'services/auth_service.dart';
 import 'splash_screen.dart';
 import 'theme/app_theme.dart';
+import 'services/revenue_cat_service.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize RevenueCat before starting the app
+  await RevenueCatService.initialize();
+
   runApp(const ShipApp());
 }
 
@@ -27,9 +33,13 @@ class ShipApp extends StatelessWidget {
       theme: AppTheme.theme,
       home: showSplash
           ? SplashScreen(
-              nextScreen: LoginScreen(authService: authService),
+              nextScreen: LoginScreen(
+                authService: authService,
+              ),
             )
-          : LoginScreen(authService: authService),
+          : LoginScreen(
+              authService: authService,
+            ),
     );
   }
 }
