@@ -1,30 +1,33 @@
 import 'package:flutter/material.dart';
-import 'login_page.dart';
 
-import 'services/revenuecat_service.dart';
+import 'screens/login_screen.dart';
+import 'services/auth_service.dart';
+import 'splash_screen.dart';
+import 'theme/app_theme.dart';
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  await RevenueCatService.initialize();
-
-  runApp(const InterviewMeApp());
+void main() {
+  runApp(const ShipApp());
 }
 
-class InterviewMeApp extends StatelessWidget {
-  const InterviewMeApp({super.key});
+class ShipApp extends StatelessWidget {
+  final AuthService? authService;
+  final bool showSplash;
+
+  const ShipApp({
+    super.key,
+    this.authService,
+    this.showSplash = true,
+  });
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
       title: 'InterviewMe',
-      theme: ThemeData(
-        scaffoldBackgroundColor: const Color(0xFF020B1A),
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF5E7CFF)),
-        useMaterial3: true,
-      ),
-      home: LoginPage(),
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.theme,
+        home: showSplash
+          ? SplashScreen(nextScreen: LoginScreen(authService: authService))
+          : LoginScreen(authService: authService),
     );
   }
 }
