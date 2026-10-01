@@ -25,8 +25,10 @@ class ShipApp extends StatelessWidget {
       title: 'InterviewMe',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.theme,
-        home: showSplash
-          ? SplashScreen(nextScreen: LoginScreen(authService: authService))
+      home: showSplash
+          ? SplashScreen(
+              nextScreen: LoginScreen(authService: authService),
+            )
           : LoginScreen(authService: authService),
     );
   }
