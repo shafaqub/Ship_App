@@ -2,48 +2,104 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({required this.nextScreen, super.key});
+  const SplashScreen({
+    required this.nextScreen,
+    this.onInitialize,
+    super.key,
+  });
 
   final Widget nextScreen;
+  final Future<void> Function()? onInitialize;
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
 class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _waveController;
-  Timer? _splashTimer;
+  late final AnimationController _logoController;
+  bool _dingPlayed = false;
 
   @override
   void initState() {
     super.initState();
+
     _waveController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 12),
-    )..repeat();
-    _splashTimer = Timer(const Duration(seconds: 3), _openNextScreen);
+    )..forward();
+
+    _logoController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..addListener(_handleLogoProgress);
+
+    _startStartup();
+  }
+
+  void _handleLogoProgress() {
+    if (!_dingPlayed && _logoController.value >= 0.72) {
+      _dingPlayed = true;
+      SystemSound.play(SystemSoundType.alert);
+    }
+  }
+
+  Future<void> _startStartup() async {
+    try {
+      await Future.wait<void>([
+        _logoController.forward(),
+        widget.onInitialize?.call() ?? Future<void>.value(),
+      ]);
+    } catch (_) {
+      // Login is the existing safe fallback when optional startup work fails.
+    }
+
+    if (mounted) {
+      _openNextScreen();
+    }
   }
 
   void _openNextScreen() {
     if (!mounted) return;
+
+    _waveController.stop(canceled: false);
+    _logoController.stop(canceled: false);
+
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 450),
+        transitionDuration: const Duration(milliseconds: 360),
         pageBuilder: (context, animation, secondaryAnimation) =>
             widget.nextScreen,
         transitionsBuilder: (context, animation, secondaryAnimation, child) =>
-            FadeTransition(opacity: animation, child: child),
+            FadeTransition(
+          opacity: animation,
+          child: ScaleTransition(
+            scale: Tween<double>(
+              begin: 0.985,
+              end: 1,
+            ).animate(
+              CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOutCubic,
+              ),
+            ),
+            child: child,
+          ),
+        ),
       ),
     );
   }
 
   @override
   void dispose() {
-    _splashTimer?.cancel();
+    _waveController.stop(canceled: false);
+    _logoController.stop(canceled: false);
     _waveController.dispose();
+    _logoController.dispose();
     super.dispose();
   }
 
@@ -74,11 +130,7 @@ class _SplashScreenState extends State<SplashScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Image.asset(
-                    'assets/images/InterviewMe_logo.png',
-                    width: 124,
-                    height: 124,
-                  ),
+                  _buildAnimatedLogo(),
                   const SizedBox(height: 18),
                   RichText(
                     text: TextSpan(
@@ -91,7 +143,9 @@ class _SplashScreenState extends State<SplashScreen>
                       children: [
                         const TextSpan(
                           text: 'Interview',
-                          style: TextStyle(color: Colors.white),
+                          style: TextStyle(
+                            color: Colors.white,
+                          ),
                         ),
                         TextSpan(
                           text: 'Me',
@@ -103,7 +157,14 @@ class _SplashScreenState extends State<SplashScreen>
                                   Color(0xFF8A78FF),
                                   Color(0xFFBB7BFF),
                                 ],
-                              ).createShader(const Rect.fromLTWH(0, 0, 180, 50)),
+                              ).createShader(
+                                const Rect.fromLTWH(
+                                  0,
+                                  0,
+                                  180,
+                                  50,
+                                ),
+                              ),
                           ),
                         ),
                       ],
@@ -117,6 +178,21 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
   }
+
+  Widget _buildAnimatedLogo() {
+    const logoSize = 220.0;
+
+    return SizedBox(
+      width: logoSize,
+      height: logoSize,
+      child: Image.asset(
+        'assets/images/InterviewMe_logo.png',
+        width: logoSize,
+        height: logoSize,
+        fit: BoxFit.contain,
+      ),
+    );
+  }
 }
 
 class WavePainter extends CustomPainter {
@@ -127,6 +203,7 @@ class WavePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final phase = progress * math.pi * 2;
+
     final firstPath = _wavePath(
       size,
       phase,
@@ -137,6 +214,7 @@ class WavePainter extends CustomPainter {
       140,
       -0.9,
     );
+
     final secondPath = _wavePath(
       size,
       phase * 1.12 + 1.5,
@@ -148,24 +226,55 @@ class WavePainter extends CustomPainter {
       1.7,
     );
 
-    _drawWave(canvas, size, firstPath, const [
-      Color(0xAA36CFFF),
-      Color(0x997B8CFF),
-      Color(0xA8D864FF),
-    ], 7, 10);
-    _drawWave(canvas, size, secondPath, const [
-      Color(0xAA7ADFFF),
-      Color(0xA8C46BFF),
-    ], 7, 10);
-    _drawWave(canvas, size, firstPath, const [
-      Color(0xFF51D8FF),
-      Color(0xFF91A4FF),
-      Color(0xFFE08AFF),
-    ], 1.8, 0);
-    _drawWave(canvas, size, secondPath, const [
-      Color(0xFF81E5FF),
-      Color(0xFFE083FF),
-    ], 1.8, 0);
+    _drawWave(
+      canvas,
+      size,
+      firstPath,
+      const [
+        Color(0xAA36CFFF),
+        Color(0x997B8CFF),
+        Color(0xA8D864FF),
+      ],
+      7,
+      10,
+    );
+
+    _drawWave(
+      canvas,
+      size,
+      secondPath,
+      const [
+        Color(0xAA7ADFFF),
+        Color(0xA8C46BFF),
+      ],
+      7,
+      10,
+    );
+
+    _drawWave(
+      canvas,
+      size,
+      firstPath,
+      const [
+        Color(0xFF51D8FF),
+        Color(0xFF91A4FF),
+        Color(0xFFE08AFF),
+      ],
+      1.8,
+      0,
+    );
+
+    _drawWave(
+      canvas,
+      size,
+      secondPath,
+      const [
+        Color(0xFF81E5FF),
+        Color(0xFFE083FF),
+      ],
+      1.8,
+      0,
+    );
   }
 
   Path _wavePath(
@@ -179,15 +288,21 @@ class WavePainter extends CustomPainter {
     double phaseMultiplier,
   ) {
     final path = Path()..moveTo(0, center);
+
     for (var x = 0.0; x <= size.width; x += 4) {
       path.lineTo(
         x,
         center +
-            math.sin((x / firstPeriod) + phase) * firstAmplitude +
-            math.sin((x / secondPeriod) + phase * phaseMultiplier) *
+            math.sin((x / firstPeriod) + phase) *
+                firstAmplitude +
+            math.sin(
+                  (x / secondPeriod) +
+                      phase * phaseMultiplier,
+                ) *
                 secondAmplitude,
       );
     }
+
     return path;
   }
 
@@ -202,10 +317,19 @@ class WavePainter extends CustomPainter {
     final paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = width
-      ..shader = LinearGradient(colors: colors).createShader(Offset.zero & size);
+      ..shader = LinearGradient(
+        colors: colors,
+      ).createShader(
+        Offset.zero & size,
+      );
+
     if (blur > 0) {
-      paint.maskFilter = MaskFilter.blur(BlurStyle.normal, blur);
+      paint.maskFilter = MaskFilter.blur(
+        BlurStyle.normal,
+        blur,
+      );
     }
+
     canvas.drawPath(path, paint);
   }
 
