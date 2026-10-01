@@ -4,14 +4,15 @@ import 'package:file_picker/file_picker.dart';
 import '../theme/app_theme.dart';
 import 'login_screen.dart';
 import 'ai_interview_screen.dart';
+import 'prep_journey_screen.dart';
+import 'profile_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String userName;
+  final String userEmail;
 
-  const HomeScreen({
-    super.key,
-    this.userName = 'Alex',
-  });
+  const HomeScreen({super.key, this.userName = 'Alex', this.userEmail = ''});
 
   static const _recentSessions = <(String, String, String, String, Color)>[];
 
@@ -21,22 +22,51 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String? _selectedCvName;
+  late final ProfileData _profile;
+
+  @override
+  void initState() {
+    super.initState();
+    _profile = ProfileData(name: widget.userName, email: widget.userEmail);
+    _profile.addListener(_handleProfileUpdate);
+  }
+
+  @override
+  void dispose() {
+    _profile
+      ..removeListener(_handleProfileUpdate)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _handleProfileUpdate() => setState(() {});
+
+  void _logout() {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute<void>(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
+  }
 
   Future<void> _pickCv() async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'doc', 'docx'],
     );
-    if (!mounted || result == null || result.files.isEmpty) return;
 
-    setState(() => _selectedCvName = result.files.single.name);
+    if (result.isEmpty) return;
+
+    setState(() => _selectedCvName = result.first.name);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('InterviewMe', style: TextStyle(fontWeight: FontWeight.w700)),
+        title: const Text(
+          'InterviewMe',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
         actions: [
           IconButton(
             tooltip: 'Notifications',
@@ -61,17 +91,21 @@ class _HomeScreenState extends State<HomeScreen> {
                   _actionCard(
                     context,
                     title: 'Start Live AI Interview',
-                    description: 'Practice a live interview session with InterviewMe.',
+                    description:
+                        'Practice a live interview session with InterviewMe.',
                     icon: Icons.mic_rounded,
                     onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(builder: (_) => const AiInterviewScreen()),
+                      MaterialPageRoute<void>(
+                        builder: (_) => const AiInterviewScreen(),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
                   _actionCard(
                     context,
                     title: 'Upload CV',
-                    description: _selectedCvName ?? 'Choose a PDF, DOC, or DOCX resume.',
+                    description:
+                        _selectedCvName ?? 'Choose a PDF, DOC, or DOCX resume.',
                     icon: Icons.upload_file_rounded,
                     onPressed: _pickCv,
                   ),
@@ -89,17 +123,21 @@ class _HomeScreenState extends State<HomeScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Good morning, ${widget.userName}',
+          'Good morning, ${_profile.name}',
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.3,
-              ),
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.3,
           ),
+        ),
         const SizedBox(height: 8),
         const Text(
           'Follow your 3-step preparation journey below to practice live AI interviews and review tailored feedback.',
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 15, height: 1.4),
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 15,
+            height: 1.4,
+          ),
         ),
       ],
     );
@@ -135,13 +173,26 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
                       const SizedBox(height: 5),
-                      Text(description, style: const TextStyle(color: AppColors.textSecondary)),
+                      Text(
+                        description,
+                        style: const TextStyle(color: AppColors.textSecondary),
+                      ),
                     ],
                   ),
                 ),
-                const Icon(Icons.arrow_forward_rounded, color: AppColors.accentCyan),
+                const Icon(
+                  Icons.arrow_forward_rounded,
+                  color: AppColors.accentCyan,
+                ),
               ],
             ),
           ),
@@ -154,10 +205,24 @@ class _HomeScreenState extends State<HomeScreen> {
     final cards = [
       ('Interviews Done', '08', Icons.quiz_outlined, AppColors.accentCyan),
       ('Average Score', '88%', Icons.insights_rounded, AppColors.success),
-      ('Target Field', 'Software Eng.', Icons.work_outline_rounded, AppColors.warning),
-      ('Prep Status', 'Ready', Icons.check_circle_outline_rounded, AppColors.accentPurple),
+      (
+        'Target Field',
+        'Software Eng.',
+        Icons.work_outline_rounded,
+        AppColors.warning,
+      ),
+      (
+        'Prep Status',
+        'Ready',
+        Icons.check_circle_outline_rounded,
+        AppColors.accentPurple,
+      ),
     ];
-    final columns = availableWidth > 900 ? 4 : availableWidth > 550 ? 2 : 1;
+    final columns = availableWidth > 900
+        ? 4
+        : availableWidth > 550
+        ? 2
+        : 1;
     return GridView.count(
       crossAxisCount: columns,
       crossAxisSpacing: 14,
@@ -240,7 +305,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           child: Text(
             caption,
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w500),
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
       ],
@@ -267,7 +336,8 @@ class _HomeScreenState extends State<HomeScreen> {
           _stepRow(
             stepNumber: 1,
             title: 'Step 1: Upload CV & Select Target Field',
-            description: 'Provide your resume and select your target field (Software Engineering, Management, Finance, etc.) so AI generates tailored questions.',
+            description:
+                'Provide your resume and select your target field (Software Engineering, Management, Finance, etc.) so AI generates tailored questions.',
             icon: Icons.upload_file_rounded,
             badgeText: 'Completed',
             badgeColor: AppColors.success,
@@ -279,14 +349,18 @@ class _HomeScreenState extends State<HomeScreen> {
               alignment: Alignment.centerLeft,
               child: SizedBox(
                 height: 24,
-                child: VerticalDivider(thickness: 2, color: AppColors.accentCyan),
+                child: VerticalDivider(
+                  thickness: 2,
+                  color: AppColors.accentCyan,
+                ),
               ),
             ),
           ),
           _stepRow(
             stepNumber: 2,
             title: 'Step 2: Live AI Practice Interview',
-            description: 'Enter the interactive AI interview room for real-time voice and text interview practice tailored to your profile.',
+            description:
+                'Enter the interactive AI interview room for real-time voice and text interview practice tailored to your profile.',
             icon: Icons.smart_toy_outlined,
             badgeText: 'Active Step',
             badgeColor: AppColors.accentCyan,
@@ -303,14 +377,18 @@ class _HomeScreenState extends State<HomeScreen> {
               alignment: Alignment.centerLeft,
               child: SizedBox(
                 height: 24,
-                child: VerticalDivider(thickness: 2, color: AppColors.cardBorder),
+                child: VerticalDivider(
+                  thickness: 2,
+                  color: AppColors.cardBorder,
+                ),
               ),
             ),
           ),
           _stepRow(
             stepNumber: 3,
             title: 'Step 3: Review Detailed Results & Feedback',
-            description: 'Inspect overall score, question-by-question breakdown, strengths, and areas for improvement after finishing practice.',
+            description:
+                'Inspect overall score, question-by-question breakdown, strengths, and areas for improvement after finishing practice.',
             icon: Icons.analytics_outlined,
             badgeText: 'Next Step',
             badgeColor: AppColors.textMuted,
@@ -336,7 +414,9 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: isCurrent ? AppColors.deepNavy : Colors.transparent,
         borderRadius: BorderRadius.circular(14),
-        border: isCurrent ? Border.all(color: AppColors.accentCyan.withValues(alpha: 0.5)) : null,
+        border: isCurrent
+            ? Border.all(color: AppColors.accentCyan.withValues(alpha: 0.5))
+            : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -352,9 +432,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   shape: BoxShape.circle,
                   border: Border.all(color: badgeColor.withValues(alpha: 0.4)),
                 ),
-                child: Center(
-                  child: Icon(icon, color: badgeColor, size: 20),
-                ),
+                child: Center(child: Icon(icon, color: badgeColor, size: 20)),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -369,20 +447,33 @@ class _HomeScreenState extends State<HomeScreen> {
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
-                              color: isCurrent ? AppColors.textPrimary : AppColors.textPrimary.withValues(alpha: 0.9),
+                              color: isCurrent
+                                  ? AppColors.textPrimary
+                                  : AppColors.textPrimary.withValues(
+                                      alpha: 0.9,
+                                    ),
                             ),
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: badgeColor.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: badgeColor.withValues(alpha: 0.3)),
+                            border: Border.all(
+                              color: badgeColor.withValues(alpha: 0.3),
+                            ),
                           ),
                           child: Text(
                             badgeText,
-                            style: TextStyle(color: badgeColor, fontSize: 11, fontWeight: FontWeight.w600),
+                            style: TextStyle(
+                              color: badgeColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ],
@@ -390,7 +481,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 6),
                     Text(
                       description,
-                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                        height: 1.4,
+                      ),
                     ),
                     if (actionButton != null) ...[
                       const SizedBox(height: 14),
@@ -415,26 +510,38 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Column(
         children: HomeScreen._recentSessions
-            .map((session) => ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
-                  leading: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppColors.deepNavy,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.record_voice_over_outlined, color: AppColors.accentCyan, size: 20),
+            .map(
+              (session) => ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 6,
+                ),
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.deepNavy,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  title: Text(
-                    session.$1,
-                    style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                  child: const Icon(
+                    Icons.record_voice_over_outlined,
+                    color: AppColors.accentCyan,
+                    size: 20,
                   ),
-                  subtitle: Text(
-                    '${session.$2}  •  ${session.$4}',
-                    style: const TextStyle(color: AppColors.textSecondary),
+                ),
+                title: Text(
+                  session.$1,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
                   ),
-                  trailing: _statusChip(session.$3, session.$5),
-                ))
+                ),
+                subtitle: Text(
+                  '${session.$2}  •  ${session.$4}',
+                  style: const TextStyle(color: AppColors.textSecondary),
+                ),
+                trailing: _statusChip(session.$3, session.$5),
+              ),
+            )
             .toList(),
       ),
     );
@@ -450,7 +557,11 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Text(
         status,
-        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600),
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -468,7 +579,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   const Spacer(),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                    icon: const Icon(
+                      Icons.close,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
@@ -478,23 +592,24 @@ class _HomeScreenState extends State<HomeScreen> {
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
-                  _drawerItem(Icons.dashboard_outlined, 'Home', true),
-                  _drawerItem(Icons.route_outlined, 'Prep Journey', false),
-                  _drawerItem(Icons.smart_toy_outlined, 'AI Practice Room', false),
-                  _drawerItem(Icons.analytics_outlined, 'Feedback & Results', false),
-                  _drawerItem(Icons.person_outline_rounded, 'Profile', false),
-                  _drawerItem(Icons.settings_outlined, 'Settings', false),
+                  _drawerItem(Icons.dashboard_outlined, 'Home'),
+                  _drawerItem(Icons.route_outlined, 'Prep Journey'),
+                  _drawerItem(Icons.person_outline_rounded, 'Profile'),
+                  _drawerItem(Icons.settings_outlined, 'Settings'),
                 ],
               ),
             ),
             const Divider(height: 1, color: AppColors.cardBorder),
             ListTile(
               leading: const Icon(Icons.logout_rounded, color: AppColors.error),
-              title: const Text('Logout', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w600)),
-              onTap: () => Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute<void>(builder: (_) => const LoginScreen()),
-                (route) => false,
+              title: const Text(
+                'Logout',
+                style: TextStyle(
+                  color: AppColors.error,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
+              onTap: _logout,
             ),
             const SizedBox(height: 8),
           ],
@@ -503,9 +618,33 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _drawerItem(IconData icon, String label, bool selected) {
+  void _openDrawerDestination(String label) {
+    if (label == 'Home') {
+      Navigator.pop(context);
+      return;
+    }
+
+    final Widget destination;
+    switch (label) {
+      case 'Prep Journey':
+        destination = const PrepJourneyScreen();
+      case 'Profile':
+        destination = ProfileScreen(profile: _profile);
+      case 'Settings':
+        destination = SettingsScreen(profile: _profile, onLogout: _logout);
+      default:
+        return;
+    }
+
+    Navigator.pop(context);
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => destination));
+  }
+
+  Widget _drawerItem(IconData icon, String label) {
+    final selected = label == 'Home';
     return ListTile(
-      enabled: selected,
       selected: selected,
       selectedTileColor: AppColors.cardSurface,
       leading: Icon(
@@ -519,7 +658,7 @@ class _HomeScreenState extends State<HomeScreen> {
           fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
         ),
       ),
-      onTap: selected ? () {} : null,
+      onTap: () => _openDrawerDestination(label),
     );
   }
 }

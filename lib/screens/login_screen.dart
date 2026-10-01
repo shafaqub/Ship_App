@@ -16,10 +16,7 @@ enum AuthMode { login, signUp, verifyEmail }
 class LoginScreen extends StatefulWidget {
   final AuthService? authService;
 
-  const LoginScreen({
-    super.key,
-    this.authService,
-  });
+  const LoginScreen({super.key, this.authService});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -114,7 +111,10 @@ class _LoginScreenState extends State<LoginScreen>
     } else if (_authMode == AuthMode.verifyEmail) {
       final code = _codeController.text.trim();
       final verificationEmail = (_verificationEmail ?? email).trim();
-      final result = await _authService.verifyEmail(email: verificationEmail, code: code);
+      final result = await _authService.verifyEmail(
+        email: verificationEmail,
+        code: code,
+      );
       if (!mounted) return;
       _handleVerifyResult(result);
     }
@@ -124,14 +124,16 @@ class _LoginScreenState extends State<LoginScreen>
     if (kIsWeb) {
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Use the Google button below to choose an account and continue.';
+        _errorMessage =
+            'Use the Google button below to choose an account and continue.';
       });
       return;
     }
 
     if (AppConfig.googleServerClientId.isEmpty) {
       setState(() {
-        _errorMessage = 'Google sign-in needs GOOGLE_SERVER_CLIENT_ID. Add it with --dart-define when launching the app.';
+        _errorMessage =
+            'Google sign-in needs GOOGLE_SERVER_CLIENT_ID. Add it with --dart-define when launching the app.';
       });
       return;
     }
@@ -143,14 +145,18 @@ class _LoginScreenState extends State<LoginScreen>
 
     try {
       _googleSignInInitialization ??= GoogleSignInService.initialize(
-        clientId: AppConfig.googleClientId.isEmpty ? null : AppConfig.googleClientId,
+        clientId: AppConfig.googleClientId.isEmpty
+            ? null
+            : AppConfig.googleClientId,
         serverClientId: AppConfig.googleServerClientId,
       );
       await _googleSignInInitialization;
       if (chooseAccount) {
         await GoogleSignInService.reset();
         _googleSignInInitialization = GoogleSignInService.initialize(
-          clientId: AppConfig.googleClientId.isEmpty ? null : AppConfig.googleClientId,
+          clientId: AppConfig.googleClientId.isEmpty
+              ? null
+              : AppConfig.googleClientId,
           serverClientId: AppConfig.googleServerClientId,
         );
         await _googleSignInInitialization;
@@ -170,7 +176,8 @@ class _LoginScreenState extends State<LoginScreen>
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Google sign-in could not be completed. Please try again.';
+        _errorMessage =
+            'Google sign-in could not be completed. Please try again.';
       });
     }
   }
@@ -190,7 +197,8 @@ class _LoginScreenState extends State<LoginScreen>
     if (!mounted) return;
     setState(() {
       _isLoading = false;
-      _errorMessage = 'Google sign-in failed. Check the OAuth client ID and authorized origin.';
+      _errorMessage =
+          'Google sign-in failed. Check the OAuth client ID and authorized origin.';
     });
   }
 
@@ -199,7 +207,10 @@ class _LoginScreenState extends State<LoginScreen>
       final userName = (result.user?['name'] as String?) ?? 'Alex';
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
-          builder: (_) => HomeScreen(userName: userName),
+          builder: (_) => HomeScreen(
+            userName: userName,
+            userEmail: result.user?['email'] as String? ?? '',
+          ),
         ),
       );
     } else {
@@ -227,10 +238,15 @@ class _LoginScreenState extends State<LoginScreen>
 
   void _handleVerifyResult(AuthResult result) {
     if (result.success) {
-      final userName = (result.user?['name'] as String?) ?? _nameController.text.trim().ifEmpty('Alex');
+      final userName =
+          (result.user?['name'] as String?) ??
+          _nameController.text.trim().ifEmpty('Alex');
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
-          builder: (_) => HomeScreen(userName: userName.isNotEmpty ? userName : 'Alex'),
+          builder: (_) => HomeScreen(
+            userName: userName.isNotEmpty ? userName : 'Alex',
+            userEmail: result.user?['email'] as String? ?? '',
+          ),
         ),
       );
     } else {
@@ -258,7 +274,9 @@ class _LoginScreenState extends State<LoginScreen>
                   child: ConstrainedBox(
                     constraints: BoxConstraints(
                       maxWidth: 1100,
-                      minHeight: constraints.maxHeight > 100 ? constraints.maxHeight - 68 : 0,
+                      minHeight: constraints.maxHeight > 100
+                          ? constraints.maxHeight - 68
+                          : 0,
                     ),
                     child: isDesktop ? _desktopLayout() : _mobileLayout(),
                   ),
@@ -300,7 +318,9 @@ class _LoginScreenState extends State<LoginScreen>
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: compact ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      crossAxisAlignment: compact
+          ? CrossAxisAlignment.center
+          : CrossAxisAlignment.start,
       children: [
         AnimatedBuilder(
           animation: _animationController,
@@ -329,7 +349,8 @@ class _LoginScreenState extends State<LoginScreen>
         ),
         const SizedBox(height: 28),
         ShaderMask(
-          shaderCallback: (bounds) => AppColors.logoGradient.createShader(bounds),
+          shaderCallback: (bounds) =>
+              AppColors.logoGradient.createShader(bounds),
           child: Text(
             'Prepare for interviews\nwith AI confidence.',
             textAlign: compact ? TextAlign.center : TextAlign.left,
@@ -362,10 +383,7 @@ class _LoginScreenState extends State<LoginScreen>
       decoration: BoxDecoration(
         color: AppColors.cardSurface.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: AppColors.cardBorder,
-          width: 1.2,
-        ),
+        border: Border.all(color: AppColors.cardBorder, width: 1.2),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.35),
@@ -383,8 +401,8 @@ class _LoginScreenState extends State<LoginScreen>
               _authMode == AuthMode.login
                   ? 'Welcome back'
                   : _authMode == AuthMode.signUp
-                      ? 'Create an Account'
-                      : 'Verify Email',
+                  ? 'Create an Account'
+                  : 'Verify Email',
               style: const TextStyle(
                 color: AppColors.textPrimary,
                 fontSize: 26,
@@ -397,27 +415,42 @@ class _LoginScreenState extends State<LoginScreen>
               _authMode == AuthMode.login
                   ? 'Sign in to access your interview practice dashboard.'
                   : _authMode == AuthMode.signUp
-                      ? 'Sign up to start your personalized AI interview prep.'
-                      : 'Enter the 6-digit verification code sent to your email.',
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                  ? 'Sign up to start your personalized AI interview prep.'
+                  : 'Enter the 6-digit verification code sent to your email.',
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 14,
+              ),
             ),
             const SizedBox(height: 24),
             if (_errorMessage != null) ...[
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.error.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
+                  border: Border.all(
+                    color: AppColors.error.withValues(alpha: 0.4),
+                  ),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.error_outline, color: AppColors.error, size: 20),
+                    const Icon(
+                      Icons.error_outline,
+                      color: AppColors.error,
+                      size: 20,
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         _errorMessage!,
-                        style: const TextStyle(color: AppColors.error, fontSize: 13),
+                        style: const TextStyle(
+                          color: AppColors.error,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                   ],
@@ -438,7 +471,8 @@ class _LoginScreenState extends State<LoginScreen>
                   prefixIcon: Icon(Icons.person_outline),
                 ),
                 validator: (value) {
-                  if ((value?.trim() ?? '').isEmpty) return 'Enter your full name';
+                  if ((value?.trim() ?? '').isEmpty)
+                    return 'Enter your full name';
                   return null;
                 },
               ),
@@ -476,10 +510,15 @@ class _LoginScreenState extends State<LoginScreen>
                   labelText: 'Password',
                   prefixIcon: const Icon(Icons.lock_outline),
                   suffixIcon: IconButton(
-                    tooltip: _obscurePassword ? 'Show password' : 'Hide password',
-                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                    tooltip: _obscurePassword
+                        ? 'Show password'
+                        : 'Hide password',
+                    onPressed: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
                     icon: Icon(
-                      _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                      _obscurePassword
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
                     ),
                   ),
                 ),
@@ -491,8 +530,12 @@ class _LoginScreenState extends State<LoginScreen>
                   }
                   return null;
                 },
-                textInputAction: _authMode == AuthMode.login ? TextInputAction.done : TextInputAction.next,
-                onFieldSubmitted: _authMode == AuthMode.login ? (_) => _submit() : null,
+                textInputAction: _authMode == AuthMode.login
+                    ? TextInputAction.done
+                    : TextInputAction.next,
+                onFieldSubmitted: _authMode == AuthMode.login
+                    ? (_) => _submit()
+                    : null,
               ),
               const SizedBox(height: 18),
             ],
@@ -507,10 +550,16 @@ class _LoginScreenState extends State<LoginScreen>
                   labelText: 'Confirm Password',
                   prefixIcon: const Icon(Icons.lock_reset_outlined),
                   suffixIcon: IconButton(
-                    tooltip: _obscureConfirmPassword ? 'Show password' : 'Hide password',
-                    onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                    tooltip: _obscureConfirmPassword
+                        ? 'Show password'
+                        : 'Hide password',
+                    onPressed: () => setState(
+                      () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                    ),
                     icon: Icon(
-                      _obscureConfirmPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                      _obscureConfirmPassword
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
                     ),
                   ),
                 ),
@@ -531,7 +580,11 @@ class _LoginScreenState extends State<LoginScreen>
                 controller: _codeController,
                 keyboardType: TextInputType.number,
                 enabled: !_isLoading,
-                style: const TextStyle(color: AppColors.textPrimary, letterSpacing: 4.0, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  letterSpacing: 4.0,
+                  fontWeight: FontWeight.bold,
+                ),
                 decoration: const InputDecoration(
                   labelText: '6-Digit Verification Code',
                   hintText: '123456',
@@ -540,7 +593,8 @@ class _LoginScreenState extends State<LoginScreen>
                 validator: (value) {
                   final code = value?.trim() ?? '';
                   if (code.isEmpty) return 'Enter the 6-digit code';
-                  if (!RegExp(r'^\d{6}$').hasMatch(code)) return 'Enter all 6 digits';
+                  if (!RegExp(r'^\d{6}$').hasMatch(code))
+                    return 'Enter all 6 digits';
                   return null;
                 },
                 textInputAction: TextInputAction.done,
@@ -559,7 +613,9 @@ class _LoginScreenState extends State<LoginScreen>
                         height: 22,
                         child: CircularProgressIndicator(
                           strokeWidth: 2.5,
-                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.midnightNavy),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            AppColors.midnightNavy,
+                          ),
                         ),
                       )
                     : Row(
@@ -570,8 +626,8 @@ class _LoginScreenState extends State<LoginScreen>
                               _authMode == AuthMode.login
                                   ? 'Sign in'
                                   : _authMode == AuthMode.signUp
-                                      ? 'Send Verification Code'
-                                      : 'Verify & Continue',
+                                  ? 'Send Verification Code'
+                                  : 'Verify & Continue',
                               textAlign: TextAlign.center,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -589,7 +645,13 @@ class _LoginScreenState extends State<LoginScreen>
                   Expanded(child: Divider(color: AppColors.cardBorder)),
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: 12),
-                    child: Text('OR', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                    child: Text(
+                      'OR',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
                   ),
                   Expanded(child: Divider(color: AppColors.cardBorder)),
                 ],
@@ -608,7 +670,11 @@ class _LoginScreenState extends State<LoginScreen>
                     onPressed: _isLoading ? null : _signInWithGoogle,
                     icon: const Text(
                       'G',
-                      style: TextStyle(color: Color(0xFF4285F4), fontSize: 20, fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                        color: Color(0xFF4285F4),
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     label: const Text('Continue with Google'),
                   ),
@@ -624,9 +690,12 @@ class _LoginScreenState extends State<LoginScreen>
                   _authMode == AuthMode.login
                       ? "Don't have an account?"
                       : _authMode == AuthMode.signUp
-                          ? "Already have an account?"
-                          : "Didn't receive code?",
-                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                      ? "Already have an account?"
+                      : "Didn't receive code?",
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
                 ),
                 TextButton(
                   onPressed: _isLoading
@@ -644,8 +713,8 @@ class _LoginScreenState extends State<LoginScreen>
                     _authMode == AuthMode.login
                         ? 'Sign Up'
                         : _authMode == AuthMode.signUp
-                            ? 'Sign In'
-                            : 'Resend / Edit Info',
+                        ? 'Sign In'
+                        : 'Resend / Edit Info',
                     style: const TextStyle(
                       color: AppColors.accentCyan,
                       fontWeight: FontWeight.w700,
